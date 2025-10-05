@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Saving.SerializableTypes
+namespace Kowl.Utils.Saving.SerializableTypes
 {
     [Serializable]
     public class SerializableDictionary<TKey, TValue> : ISerializationCallbackReceiver

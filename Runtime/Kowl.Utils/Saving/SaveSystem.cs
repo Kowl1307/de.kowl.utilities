@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Saving
+namespace Kowl.Utils.Saving
 {
     public static class SaveSystem
     {

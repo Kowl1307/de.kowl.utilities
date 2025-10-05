@@ -4,11 +4,11 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Voxel_Engine
+namespace Kowl.Utils
 {
-    public class UnityMainThreadDispatcher : MonoBehaviour {
+	public class UnityMainThreadDispatcher : MonoBehaviour {
 
-	    private static UnityMainThreadDispatcher _instance = null;
+		private static UnityMainThreadDispatcher _instance = null;
 		private static readonly Queue<Action> ExecutionQueue = new Queue<Action>();
 
 		private const int MaxProcessMilliseconds = 1;
@@ -131,7 +131,7 @@ namespace Voxel_Engine
 		}
 
 		void OnDestroy() {
-				_instance = null;
+			_instance = null;
 		}
 	}
 }
