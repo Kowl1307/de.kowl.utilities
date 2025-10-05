@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -9,45 +10,23 @@ namespace Kowl.Utils
 	public class UnityMainThreadDispatcher : MonoBehaviour {
 
 		private static UnityMainThreadDispatcher _instance = null;
-		private static readonly Queue<Action> ExecutionQueue = new Queue<Action>();
+		private static readonly ConcurrentQueue<Action> ExecutionQueue = new();
 
-		private const int MaxProcessMilliseconds = 1;
-
-		private Coroutine _processCoroutine;
+		private const int MaxProcessMilliseconds = 4;
 
 		public void Update() {
-			lock(ExecutionQueue)
-			{
-				if (_processCoroutine == null && ExecutionQueue.Count > 0)
-					_processCoroutine = StartCoroutine(ProcessQueueCoroutine());
-			}
-		}
-
-		private IEnumerator ProcessQueueCoroutine()
-		{
-			while (ExecutionQueue.Count > 0)
-			{
-				var startTime = Time.realtimeSinceStartup;
-				while (ExecutionQueue.Count > 0 && (Time.realtimeSinceStartup - startTime) * 1000f < MaxProcessMilliseconds)
-				{
-					var func = ExecutionQueue.Dequeue();
-					//TODO: This is sometimes null. I don't know why but nothing seems to be missing ;(
-					func?.Invoke();
-				}
-				yield return null;
-			}
-			_processCoroutine = null;
-		}
-
-		/// <summary>
-		/// Locks the queue and adds the IEnumerator to the queue
-		/// </summary>
-		/// <param name="action">IEnumerator function that will be executed from the main thread.</param>
-		public void Enqueue(IEnumerator action) {
-			lock (ExecutionQueue) {
-				ExecutionQueue.Enqueue (() => {
-					StartCoroutine (action);
-				});
+			var startTime = Time.realtimeSinceStartup;
+			while (true) {
+				Action action = null;
+				
+				if (ExecutionQueue.Count > 0)
+					 ExecutionQueue.TryDequeue(out action);
+				
+				if (action == null)
+					break;
+				action.Invoke();
+				if ((Time.realtimeSinceStartup - startTime) * 1000f >= MaxProcessMilliseconds)
+					break;
 			}
 		}
 
@@ -57,7 +36,10 @@ namespace Kowl.Utils
 		/// <param name="action">function that will be executed from the main thread.</param>
 		public void Enqueue(Action action)
 		{
-			Enqueue(ActionWrapper(action));
+			if (action == null)
+				return;
+			
+			ExecutionQueue.Enqueue(action);
 		}
 
 		/// <summary>
@@ -67,6 +49,9 @@ namespace Kowl.Utils
 		/// <returns>A Task that can be awaited until the action completes</returns>
 		public Task EnqueueAsync(Action action)
 		{
+			if (action == null)
+				return null;
+			
 			var tcs = new TaskCompletionSource<bool>();
 
 			void WrappedAction() {
@@ -77,10 +62,11 @@ namespace Kowl.Utils
 				} catch (Exception ex) 
 				{
 					tcs.TrySetException(ex);
+					Debug.LogError(ex);
 				}
 			}
 
-			Enqueue(ActionWrapper(WrappedAction));
+			Enqueue(WrappedAction);
 			return tcs.Task;
 		}
 		
@@ -101,14 +87,8 @@ namespace Kowl.Utils
 				}
 			}
 
-			Enqueue(ActionWrapper(WrappedAction));
+			Enqueue(WrappedAction);
 			return tcs.Task;
-		}
-		
-		IEnumerator ActionWrapper(Action a)
-		{
-			a();
-			yield return null;
 		}
 		
 		public static bool Exists() {
