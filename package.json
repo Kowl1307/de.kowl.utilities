@@ -1,0 +1,12 @@
+{
+  "name": "de.kowl.utilities",
+  "version": "1.0.0",
+  "displayName": "Kowl's Utilities",
+  "description": "This is a collection of useful classes for creating games",
+  "unity": "6000.0",
+  "author": {
+    "name": "Kilian Sinke",
+    "email": "",
+    "url": ""
+  }
+}
