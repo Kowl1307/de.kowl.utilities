@@ -29,12 +29,27 @@ namespace Kowl.Utils
 		/// </summary>
 		/// <param name="action">function that will be executed from the main thread.</param>
 		/// <returns>A Task that can be awaited until the action completes</returns>
-		public void EnqueueAsync(Action action)
+		public Task EnqueueAsync(Action action)
 		{
 			if (action == null)
-				return;
+				return Task.CompletedTask;
 
-			_syncContext.Post(_ => action(), null);
+			var tcs = new TaskCompletionSource<object>();
+
+			_syncContext.Post(_ =>
+			{
+				try
+				{
+					action();
+					tcs.SetResult(null);
+				}
+				catch (Exception ex)
+				{
+					tcs.SetException(ex);
+				}
+			}, null);
+
+			return tcs.Task;
 		}
 		
 		/// <summary>
