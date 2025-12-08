@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -10,28 +9,11 @@ namespace Kowl.Utils
 	public class UnityMainThreadDispatcher : MonoBehaviour {
 
 		private static UnityMainThreadDispatcher _instance = null;
-		private static readonly ConcurrentQueue<Action> ExecutionQueue = new();
 
-		private const int MaxProcessMilliseconds = 4;
-
-		public void Update() {
-			var startTime = Time.realtimeSinceStartup;
-			while (true) {
-				Action action = null;
-				
-				if (ExecutionQueue.Count > 0)
-					 ExecutionQueue.TryDequeue(out action);
-				
-				if (action == null)
-					break;
-				action.Invoke();
-				if ((Time.realtimeSinceStartup - startTime) * 1000f >= MaxProcessMilliseconds)
-					break;
-			}
-		}
+		private SynchronizationContext _syncContext;
 
 		/// <summary>
-		/// Locks the queue and adds the Action to the queue
+		/// Sends the action to the main thread synchroneously
 		/// </summary>
 		/// <param name="action">function that will be executed from the main thread.</param>
 		public void Enqueue(Action action)
@@ -39,55 +21,48 @@ namespace Kowl.Utils
 			if (action == null)
 				return;
 			
-			ExecutionQueue.Enqueue(action);
+			_syncContext.Send( _ => action(), null);
 		}
 
 		/// <summary>
-		/// Locks the queue and adds the Action to the queue, returning a Task which is completed when the action completes
+		/// Posts an action to the main thread
 		/// </summary>
 		/// <param name="action">function that will be executed from the main thread.</param>
 		/// <returns>A Task that can be awaited until the action completes</returns>
-		public Task EnqueueAsync(Action action)
+		public void EnqueueAsync(Action action)
 		{
 			if (action == null)
-				return null;
-			
-			var tcs = new TaskCompletionSource<bool>();
+				return;
 
-			void WrappedAction() {
-				try 
-				{
-					action();
-					tcs.TrySetResult(true);
-				} catch (Exception ex) 
-				{
-					tcs.TrySetException(ex);
-					Debug.LogError(ex);
-				}
-			}
-
-			Enqueue(WrappedAction);
-			return tcs.Task;
+			_syncContext.Post(_ => action(), null);
 		}
 		
+		/// <summary>
+		/// Posts a function to the main thread. The result can be awaited.
+		/// </summary>
+		/// <param name="func"></param>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
 		public Task<T> EnqueueAsync<T>(Func<T> func)
 		{
+			if (func == null)
+				return Task.FromResult(default(T)!);
+
 			var tcs = new TaskCompletionSource<T>();
 
-			void WrappedAction()
+			_syncContext.Post(_ =>
 			{
 				try
 				{
-					T result = func();
-					tcs.TrySetResult(result);
+					var result = func();
+					tcs.SetResult(result);
 				}
 				catch (Exception ex)
 				{
-					tcs.TrySetException(ex);
+					tcs.SetException(ex);
 				}
-			}
+			}, null);
 
-			Enqueue(WrappedAction);
 			return tcs.Task;
 		}
 		
@@ -103,11 +78,14 @@ namespace Kowl.Utils
 		}
 
 
-		void Awake() {
-			if (_instance == null) {
-				_instance = this;
-				DontDestroyOnLoad(this.gameObject);
-			}
+		void Awake()
+		{
+			if (_instance != null) return;
+			
+			_instance = this;
+			DontDestroyOnLoad(gameObject);
+
+			_syncContext = SynchronizationContext.Current;
 		}
 
 		void OnDestroy() {
