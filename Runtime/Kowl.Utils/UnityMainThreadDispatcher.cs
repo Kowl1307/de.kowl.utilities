@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using Kowl.Utils.MainThreadDispatcher;
 using UnityEngine;
 
 namespace Kowl.Utils
@@ -10,19 +11,11 @@ namespace Kowl.Utils
 
 		private static UnityMainThreadDispatcher _instance = null;
 
-		private SynchronizationContext _syncContext;
+		private TimeGatedSynchronizationContext _syncContext;
+		
+		private SynchronizationContext _oldSyncContext;
 
-		/// <summary>
-		/// Sends the action to the main thread synchroneously
-		/// </summary>
-		/// <param name="action">function that will be executed from the main thread.</param>
-		public void Enqueue(Action action)
-		{
-			if (action == null)
-				return;
-			
-			_syncContext.Send( _ => action(), null);
-		}
+		private const double TimeBudgetMs = 10;
 
 		/// <summary>
 		/// Posts an action to the main thread
@@ -92,7 +85,6 @@ namespace Kowl.Utils
 			return _instance;
 		}
 
-
 		void Awake()
 		{
 			if (_instance != null) return;
@@ -100,11 +92,20 @@ namespace Kowl.Utils
 			_instance = this;
 			DontDestroyOnLoad(gameObject);
 
-			_syncContext = SynchronizationContext.Current;
+			_syncContext = new TimeGatedSynchronizationContext(TimeBudgetMs);
+			
+			_oldSyncContext = SynchronizationContext.Current;
+			SynchronizationContext.SetSynchronizationContext(_syncContext);
+		}
+
+		public void Update()
+		{
+			_syncContext.Pump();
 		}
 
 		void OnDestroy() {
 			_instance = null;
+			SynchronizationContext.SetSynchronizationContext(_oldSyncContext);
 		}
 	}
 }

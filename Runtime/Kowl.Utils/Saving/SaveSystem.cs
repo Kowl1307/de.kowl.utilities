@@ -50,20 +50,17 @@ namespace Kowl.Utils.Saving
 
         private static async Task SaveTask<T>(T data, string completePath) where T : class
         {
-            await Task.Run(() =>
-            {
-                var directoryPath = Path.GetDirectoryName(completePath);
+            var directoryPath = Path.GetDirectoryName(completePath);
 
-                if (!Directory.Exists(directoryPath))
-                {
-                    if (directoryPath != null) Directory.CreateDirectory(directoryPath);
-                }
-                /*var formatter = new BinaryFormatter();
-                using var fileStream = new FileStream(completePath, FileMode.OpenOrCreate);
-                formatter.Serialize(fileStream, data);
-                */
-                File.WriteAllTextAsync(completePath, JsonUtility.ToJson(data));
-            });
+            if (!Directory.Exists(directoryPath))
+            {
+                if (directoryPath != null) Directory.CreateDirectory(directoryPath);
+            }
+            /*var formatter = new BinaryFormatter();
+            using var fileStream = new FileStream(completePath, FileMode.OpenOrCreate);
+            formatter.Serialize(fileStream, data);
+            */
+            await File.WriteAllTextAsync(completePath, JsonUtility.ToJson(data));
         }
 
         public static T LoadData<T>(string filePath) where T : class
