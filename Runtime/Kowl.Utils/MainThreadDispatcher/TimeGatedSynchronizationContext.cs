@@ -40,6 +40,11 @@ namespace Kowl.Utils.MainThreadDispatcher
 
         public void Pump()
         {
+            if (_queue.Count == 0)
+            {
+                return;
+            }
+            
             var startTicks = DateTime.UtcNow.Ticks;
 
             do

@@ -12,8 +12,6 @@ namespace Kowl.Utils
 		private static UnityMainThreadDispatcher _instance = null;
 
 		private TimeGatedSynchronizationContext _syncContext;
-		
-		private SynchronizationContext _oldSyncContext;
 
 		private const double TimeBudgetMs = 10;
 
@@ -94,8 +92,7 @@ namespace Kowl.Utils
 
 			_syncContext = new TimeGatedSynchronizationContext(TimeBudgetMs);
 			
-			_oldSyncContext = SynchronizationContext.Current;
-			SynchronizationContext.SetSynchronizationContext(_syncContext);
+			// SynchronizationContext.SetSynchronizationContext(_syncContext);
 		}
 
 		public void Update()
@@ -105,7 +102,6 @@ namespace Kowl.Utils
 
 		void OnDestroy() {
 			_instance = null;
-			SynchronizationContext.SetSynchronizationContext(_oldSyncContext);
 		}
 	}
 }
