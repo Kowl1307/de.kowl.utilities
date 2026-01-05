@@ -26,5 +26,15 @@ namespace Kowl.Utils
         {
             return new Vector3Int(vector.x, 0, vector.y);
         }
+
+        public static int ManhattanDistance(this Vector3Int vector)
+        {
+            return vector.x + vector.y + vector.z;
+        }
+
+        public static int ManhattanDistance(this Vector3Int vector, Vector3Int other)
+        {
+            return (other - vector).ManhattanDistance();
+        }
     }
 }
