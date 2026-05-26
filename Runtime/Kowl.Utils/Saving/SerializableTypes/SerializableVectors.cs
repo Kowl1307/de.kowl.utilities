@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace Kowl.Utils.Saving.SerializableTypes
+namespace Packages.de.kowl.utilities.Runtime.Kowl.Utils.Saving.SerializableTypes
 {
     
     [Serializable]

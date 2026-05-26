@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Kowl.Utils
+namespace Packages.de.kowl.utilities.Runtime.Kowl.Utils
 {
     public class ConcurrentPriorityQueue<TElement, TPriority>
     {

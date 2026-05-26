@@ -1,34 +1,31 @@
 ﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Profiling;
 
-namespace Kowl.Utils
+namespace Packages.de.kowl.utilities.Runtime.Kowl.Utils
 {
     public class ObjectPool<T> : Object where T : UnityEngine.Object
     {
         private readonly ConcurrentQueue<T> _objects;
         private readonly T _objectPrefab;
 
-        private int _refillAmount = 4;
-
         private Task fillTask;
 
-        private const int _refillBatchSize = 2;
+        private int _refillBatchSize;
 
         public ObjectPool(T prefab, int fillBatchSize = 2)
         {
             _objects = new ConcurrentQueue<T>();
             _objectPrefab = prefab;
-            _refillAmount = fillBatchSize;
+            _refillBatchSize = fillBatchSize;
         }
 
-        public async Task FillToAsync(int capacity)
+        public async Task FillToAsync(int capacity, CancellationToken cancellationToken = default)
         {
-            while (_objects.Count < capacity)
+            while (_objects.Count < capacity && !cancellationToken.IsCancellationRequested)
             {
-                var objects = await InstantiateAsync(_objectPrefab, _refillBatchSize, Vector3.zero, Quaternion.identity);
+                var objects = await InstantiateAsync(_objectPrefab, _refillBatchSize, null, Vector3.zero, Quaternion.identity, cancellationToken);
                 foreach (var o in objects)
                 {
                     _objects.Enqueue(o);
@@ -38,7 +35,7 @@ namespace Kowl.Utils
             fillTask = null;
         }
 
-        public async Task<T> GetObjectAsync()
+        public async Task<T> GetObjectAsync(CancellationToken cancellationToken = default)
         {
             if (_objects.TryDequeue(out var obj))
                 return obj;
@@ -71,7 +68,7 @@ namespace Kowl.Utils
 
         public void SetRefillAmount(int amount)
         {
-            _refillAmount = amount;
+            _refillBatchSize = amount;
         }
 
         public int CurrentAmount()

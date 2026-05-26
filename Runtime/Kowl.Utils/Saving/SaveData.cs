@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Kowl.Utils.Saving
+namespace Packages.de.kowl.utilities.Runtime.Kowl.Utils.Saving
 {
     [Serializable]
     public abstract class SaveData

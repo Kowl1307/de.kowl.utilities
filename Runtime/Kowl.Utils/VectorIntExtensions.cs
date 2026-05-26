@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace Kowl.Utils
+namespace Packages.de.kowl.utilities.Runtime.Kowl.Utils
 {
     public static class VectorIntExtensions
     {

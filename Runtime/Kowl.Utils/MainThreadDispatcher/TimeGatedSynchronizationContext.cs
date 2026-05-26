@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Threading;
-using UnityEngine.Profiling;
 
-namespace Kowl.Utils.MainThreadDispatcher
+namespace Packages.de.kowl.utilities.Runtime.Kowl.Utils.MainThreadDispatcher
 {
     public sealed class TimeGatedSynchronizationContext : SynchronizationContext
     {

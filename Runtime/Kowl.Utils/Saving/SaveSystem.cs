@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Kowl.Utils.Saving
+namespace Packages.de.kowl.utilities.Runtime.Kowl.Utils.Saving
 {
     public static class SaveSystem
     {
@@ -15,6 +15,12 @@ namespace Kowl.Utils.Saving
         private static readonly object Lock = new();
         private static bool _isProcessing = false;
         
+        /// <summary>
+        /// Saves the given serializable object to the given file path.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="data"></param>
+        /// <param name="filePath"></param>
         public static void SaveData<T>(T data, string filePath) where T : class
         {
             var completePath = Application.persistentDataPath + "/" + filePath;
@@ -60,9 +66,17 @@ namespace Kowl.Utils.Saving
             using var fileStream = new FileStream(completePath, FileMode.OpenOrCreate);
             formatter.Serialize(fileStream, data);
             */
-            await File.WriteAllTextAsync(completePath, JsonUtility.ToJson(data));
+            var jsonFormat = JsonUtility.ToJson(data);
+            await File.WriteAllTextAsync(completePath, jsonFormat);
         }
 
+        /// <summary>
+        /// Deserializes an object from a given file path.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
+        /// <exception cref="FileNotFoundException">Thrown if the file does not exist.</exception>
         public static T LoadData<T>(string filePath) where T : class
         {
             var completePath = Application.persistentDataPath + "/" + filePath;
