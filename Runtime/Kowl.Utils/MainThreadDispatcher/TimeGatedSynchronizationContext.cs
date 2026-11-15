@@ -36,24 +36,23 @@ namespace Packages.de.kowl.utilities.Runtime.Kowl.Utils.MainThreadDispatcher
             if (ex != null) throw ex;
         }
 
+        /// <summary>
+        /// Drains queued work on the calling thread until the time budget is spent or the queue is empty.
+        /// Processes 0–N callbacks per call depending on remaining budget.
+        /// </summary>
         public void Pump()
         {
-            if (_queue.Count == 0)
-            {
-                return;
-            }
-            
             var startTicks = DateTime.UtcNow.Ticks;
 
-            do
+            while (DateTime.UtcNow.Ticks - startTicks < _timeBudgetTicks)
             {
                 if (!_queue.TryDequeue(out var work))
                 {
                     break;
                 }
+
                 work.callback(work.state);
-                
-            } while (DateTime.UtcNow.Ticks - startTicks >= _timeBudgetTicks);
+            }
         }
     }
 }

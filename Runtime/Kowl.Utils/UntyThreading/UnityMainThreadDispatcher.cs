@@ -6,9 +6,9 @@ using UnityEngine;
 
 namespace Packages.de.kowl.utilities.Runtime.Kowl.Utils.UntyThreading
 {
+    [DefaultExecutionOrder(-10000)]
     public class UnityMainThreadDispatcher : MonoBehaviour
     {
-
         private static UnityMainThreadDispatcher _instance = null;
 
         private TimeGatedSynchronizationContext _syncContext;
@@ -46,23 +46,33 @@ namespace Packages.de.kowl.utilities.Runtime.Kowl.Utils.UntyThreading
             return Thread.CurrentThread.ManagedThreadId == UnityMainThread.ManagedThreadId;
         }
 
-        public async Task ExecuteOrEnqueueIfNotMainThread(Action action)
+        /// <summary>
+        /// Runs <paramref name="action"/> immediately when already on the Unity main thread;
+        /// otherwise posts it through <see cref="TimeGatedSynchronizationContext"/> so <see cref="Update"/> budgets it.
+        /// </summary>
+        public Task ExecuteOrEnqueueIfNotMainThread(Action action)
         {
-            if (!AmIOnMainThread())
+            if (AmIOnMainThread())
             {
-                await Awaitable.MainThreadAsync();
+                action();
+                return Task.CompletedTask;
             }
 
-            action();
+            return EnqueueAsync(action);
         }
 
-        public async Task<T> ExecuteOrEnqueueIfNotMainThread<T>(Func<T> function)
+        /// <summary>
+        /// Runs <paramref name="function"/> immediately when already on the Unity main thread;
+        /// otherwise posts it through <see cref="TimeGatedSynchronizationContext"/> so <see cref="Update"/> budgets it.
+        /// </summary>
+        public Task<T> ExecuteOrEnqueueIfNotMainThread<T>(Func<T> function)
         {
-            if (!AmIOnMainThread())
+            if (AmIOnMainThread())
             {
-                await Awaitable.MainThreadAsync();
+                return Task.FromResult(function());
             }
-            return function();
+
+            return EnqueueAsync(function);
         }
 
         /// <summary>
