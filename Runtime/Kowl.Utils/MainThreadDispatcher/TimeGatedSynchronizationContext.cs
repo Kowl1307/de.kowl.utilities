@@ -37,15 +37,37 @@ namespace Packages.de.kowl.utilities.Runtime.Kowl.Utils.MainThreadDispatcher
         }
 
         /// <summary>
-        /// Drains queued work on the calling thread until the time budget is spent or the queue is empty.
+        /// Drops all pending work without executing it. Awaiters must be completed via cancellation registrations.
+        /// </summary>
+        public void Clear()
+        {
+            while (_queue.TryDequeue(out _))
+            {
+            }
+        }
+
+        /// <summary>
+        /// Drains queued work on the calling thread until the time budget is spent, the queue is empty, or cancellation is requested.
         /// Processes 0–N callbacks per call depending on remaining budget.
         /// </summary>
-        public void Pump()
+        public void Pump(CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                Clear();
+                return;
+            }
+
             var startTicks = DateTime.UtcNow.Ticks;
 
             while (DateTime.UtcNow.Ticks - startTicks < _timeBudgetTicks)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    Clear();
+                    break;
+                }
+
                 if (!_queue.TryDequeue(out var work))
                 {
                     break;
